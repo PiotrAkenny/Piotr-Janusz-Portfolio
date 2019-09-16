@@ -1,0 +1,19 @@
+import os
+import shutil
+try: 
+    os.mkdir("D:\\imagesFound")
+except:
+    print("folder already exists")
+newfilepath = "D:\\imagesFound"
+
+for r, d, f in os.walk('C:\\'):
+    for file in f:
+        if file.endswith(".png") or file.endswith(".jpg"):
+                #print(i)
+                print(os.path.join(r,file))
+                #print (r + i)
+                print(newfilepath)
+                print(os.path.exists(newfilepath))
+                print(os.path.exists(os.path.join(r,file)))
+                if os.path.exists(os.path.join(r,file)) == True:
+                    shutil.copy(os.path.join(r,file), newfilepath,)
