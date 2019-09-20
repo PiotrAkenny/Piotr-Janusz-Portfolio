@@ -1,0 +1,239 @@
+import pygame
+import random
+import time
+from pygame.locals import *
+
+pygame.init()
+gameDisplay = pygame.display.set_mode((800,600))
+pygame.display.set_caption('Maze Generator')
+clock = pygame.time.Clock()
+white = (255,255,255)
+black = (0,0,0)
+red = (255,0,0)
+gameDisplay.fill(white)
+crashed = False
+xgrid = {}
+ygrid = {}
+gridDrawn = False
+global visitedGrid
+visitedGrid = {}
+global cellsvisited
+global currentgridy
+global currentgridx
+global prevcellsvisited
+global fount
+fount = False
+prevcellsvisited = 0
+cellsvisited = 0
+currentgridx = 0
+currentgridy = 0
+exploredcells = []
+def drawcell(x,y):
+    pygame.draw.rect(gameDisplay, white, [x-10,y-10,20,20])
+    pygame.draw.line(gameDisplay, black, (x - 10, y + 10), (x + 10, y + 10))
+    pygame.draw.line(gameDisplay, black, (x - 10, y + 10), (x - 10, y - 10))
+    pygame.draw.line(gameDisplay, black, (x - 10, y - 10), (x + 10, y - 10))
+    pygame.draw.line(gameDisplay, black, (x + 10, y + 10), (x + 10, y - 10))
+def drawgrid():
+    print("drawing grid")
+    xindex = 0
+    yindex = 0
+    x = 20
+    y = 20
+    for z in range(28):
+        for i in range(38):
+            xgrid[xindex,yindex] = x
+            ygrid[xindex,yindex] = y
+            drawcell(xgrid[xindex,yindex],ygrid[xindex,yindex])
+            print(str(xgrid[xindex,yindex]) + " , " + str(ygrid[xindex,yindex]))
+            xindex += 1
+            x += 20
+        x = 20
+        y += 20
+        xindex = 0
+        yindex += 1
+    return True
+def solvegrid():
+    global visitedGrid
+    print("yeetey")
+    pygame.event.get()
+    tempgrid = {}
+    for i in range(28):
+        for y in range(38):
+            visitedGrid[y,i] = False
+    cellindex = 0
+    exploredcells.append(str(currentgridx) + "," + str(currentgridy))
+    visitedGrid[currentgridx,currentgridy] = True
+    for i in range(38):
+        visitedGrid[i,-1] = True
+    for i in range(28):
+        visitedGrid[-1,i] = True
+    for i in range(28):
+        visitedGrid[38,i] = True
+    for i in range(38):
+        visitedGrid[i,28] = True
+    #print(visitedGrid)
+def whilefunc():
+    pygame.event.get()
+    pygame.event.pump()
+    global prevcellsvisited
+    global fount
+    global cellsvisited
+    global currentgridy
+    global currentgridx
+    global visitedGrid
+    visitedGrid[38,0] = True
+    visitedGrid[38, 1] = True
+    visitedGrid[38, 2] = True
+    visitedGrid[38, 3] = True
+    visitedGrid[38,4] = True
+    visitedGrid[38, 5] = True
+    visitedGrid[38, 6] = True
+    visitedGrid[38, 7] = True
+    visitedGrid[38, 8] = True
+    visitedGrid[38, 9] = True
+    visitedGrid[38, 10] = True
+    visitedGrid[38, 11] = True
+    visitedGrid[38, 12] = True
+    visitedGrid[38, 13] = True
+    visitedGrid[38, 14] = True
+    visitedGrid[38, 15] = True
+    visitedGrid[38, 16] = True
+    visitedGrid[38, 17] = True
+    visitedGrid[38, 18] = True
+    visitedGrid[38, 19] = True
+    visitedGrid[38, 20] = True
+    visitedGrid[38, 21] = True
+    visitedGrid[38, 22] = True
+    visitedGrid[38, 23] = True
+    visitedGrid[38, 24] = True
+    visitedGrid[38, 25] = True
+    visitedGrid[38, 26] = True
+    visitedGrid[38, 27] = True
+    visitedGrid[38, 28] = True
+    if currentgridx == 37:
+        currentgridx = 36
+    if currentgridx == 38 and currentgridy == 0:
+        currentgridx == 0
+    print("currentgrix " + str(currentgridx))
+    print("currentgriy " + str(currentgridy))
+    while visitedGrid[currentgridx,currentgridy -1] != True or visitedGrid[currentgridx + 1,currentgridy] != True or visitedGrid[currentgridx,currentgridy +1] != True or visitedGrid[currentgridx -1,currentgridy] != True:
+        pygame.event.get()
+        pygame.event.pump()
+        cellsvisited = prevcellsvisited
+        direction = random.randint(1, 4)  # 1 = up ,2 = right ,3 = down ,4 = left
+        if direction == 1 and currentgridy != 0:
+            if visitedGrid[currentgridx,currentgridy - 1] == False:
+                try:
+                    temp1 = int(xgrid[currentgridx,currentgridy]) -8
+                except:
+                    xgrid[currentgridx, currentgridy] = False
+                    temp1 = int(xgrid[currentgridx, currentgridy]) - 8
+                temp2 = int(ygrid[currentgridx,currentgridy])
+                temp3 = int(xgrid[currentgridx,currentgridy-1]) +8
+                temp4 = int(ygrid[currentgridx,currentgridy-1])
+                pygame.draw.rect(gameDisplay, white, [temp1, temp4,16, temp2 - temp4])
+                currentgridy -= 1
+                visitedGrid[currentgridx,currentgridy] = True
+                exploredcells.append(str(currentgridx) + "," + str(currentgridy))
+                cellsvisited += 1
+                prevcellsvisited += 1
+        elif direction == 2 and currentgridx < 38:
+            if visitedGrid[currentgridx + 1,currentgridy] == False:
+                try:
+                    temp1 = int(xgrid[currentgridx,currentgridy])
+                except:
+                    xgrid[currentgridx, currentgridy] = False
+                    temp1 = int(xgrid[currentgridx, currentgridy])
+                temp2 = int(ygrid[currentgridx,currentgridy]) -8
+                temp3 = int(xgrid[currentgridx+1,currentgridy])
+                temp4 = int(ygrid[currentgridx+1,currentgridy])
+                pygame.draw.rect(gameDisplay, white, [temp1, temp2,temp3 - temp1,16])
+                currentgridx += 1
+                visitedGrid[currentgridx, currentgridy] = True
+                exploredcells.append(str(currentgridx) + "," + str(currentgridy))
+                cellsvisited += 1
+                prevcellsvisited += 1
+        elif direction == 3 and currentgridy < 28:
+            if visitedGrid[currentgridx,currentgridy + 1] == False:
+                temp1 = int(xgrid[currentgridx,currentgridy]) - 8
+                temp2 = int(ygrid[currentgridx,currentgridy])
+                try:
+                    temp4 = int(ygrid[currentgridx+1,currentgridy])
+                except:
+                    ygrid[currentgridx + 1, currentgridy] = False
+                    temp1 = int(ygrid[currentgridx+1,currentgridy]) - 8
+                pygame.draw.rect(gameDisplay, white, [temp1, temp2,16,25])
+                currentgridy += 1
+                visitedGrid[currentgridx, currentgridy] = True
+                exploredcells.append(str(currentgridx) + "," + str(currentgridy))
+                cellsvisited += 1
+                prevcellsvisited += 1
+        elif direction == 4 and currentgridx < 38 :
+            if visitedGrid[currentgridx - 1,currentgridy] == False:
+                temp1 = int(xgrid[currentgridx,currentgridy])
+                temp2 = int(ygrid[currentgridx,currentgridy]) -8
+                temp3 = int(xgrid[currentgridx-1,currentgridy])
+                temp4 = int(ygrid[currentgridx-1,currentgridy])
+                pygame.draw.rect(gameDisplay, white, [temp1, temp2,temp3 - temp1,16])
+                currentgridx -= 1
+                visitedGrid[currentgridx, currentgridy] = True
+                exploredcells.append(str(currentgridx) + "," + str(currentgridy))
+                cellsvisited += 1
+                prevcellsvisited += 1
+    else:
+        pygame.event.get()
+        pygame.event.pump()
+        cellsvisited -= 1
+        if cellsvisited < 0:
+            time.sleep(100)
+        print("cells visited " + str(cellsvisited))
+        print(len(exploredcells[cellsvisited]))
+        print(exploredcells[cellsvisited])
+        if exploredcells[cellsvisited][2] == ",":
+            currentgridx = int(str(exploredcells[cellsvisited][0]) + str(exploredcells[cellsvisited][1]))
+        else:
+            currentgridx = int(exploredcells[cellsvisited][0])
+        if len(exploredcells[cellsvisited]) == 5:
+            currentgridy = int(str(exploredcells[cellsvisited][3]) + str(exploredcells[cellsvisited][4]))
+        elif exploredcells[cellsvisited][1] == "," and len(exploredcells[cellsvisited]) == 4:
+            currentgridy = int(str(exploredcells[cellsvisited][2]) + str(exploredcells[cellsvisited][3]))
+        elif len(exploredcells[cellsvisited]) == 4 and exploredcells[cellsvisited][2] == ",":
+            currentgridy = int(exploredcells[cellsvisited][3])
+        else:
+            currentgridy = int(exploredcells[cellsvisited][2])
+
+        print(exploredcells)
+        print("exploredcells[0]" + str(exploredcells[cellsvisited][0]))
+        print("exploredcells[1]" + str(exploredcells[cellsvisited][1]))
+        print("exploredcells[2]" + str(exploredcells[cellsvisited][2]))
+        try:
+            print("exploredcells[3]" + str(exploredcells[cellsvisited][3]))
+        except:
+            print("whoopsie")
+        print("currnetgridx " +  str(currentgridx))
+        print("currnetgridy " + str(currentgridy))
+
+    #print("done")
+
+
+
+while crashed == False:
+    pygame.event.get()
+    for event in pygame.event.get():
+        print("event")
+        if event.type == pygame.QUIT:
+            crashed = True
+            raise SystemExit
+    if gridDrawn == False:
+        print("yeet")
+        gridDrawn = drawgrid()
+        solvegrid()
+    for i in range(5000):
+        print(i)
+        pygame.event.get()
+        pygame.event.pump()
+        whilefunc()
+    pygame.display.update()
+    pygame.display.flip()
+    clock.tick(30)
