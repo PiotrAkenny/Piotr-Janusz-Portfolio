@@ -1,0 +1,258 @@
+import pygame
+import random
+import time
+import math
+# //////////////// Pixle Size //////////////
+pixle_width = 5
+pixle_height = 5
+# //////////////// Grid Size //////////////
+grid_collumbs = 71
+grid_rows = 71
+# //////////////// place holder //////////////
+event1 = pygame.event.Event(pygame.USEREVENT)
+global currentposy
+global currentposx
+global prevposx
+global prevposy
+global top
+global bot
+global left
+global right
+top = True
+bot = True
+left = True
+right = True
+currentposx = 1
+currentposy = 1
+prevposx = 1
+prevposy = 1
+nodes = {}
+stackx = []
+stacky = []
+global wall
+global unvisit
+wall = 0
+unvisit = 0
+crashed = False
+pygame.init()
+black = (0,0,0)
+white = (255,255,255)
+grey = (50,50,50)
+display = pygame.display.set_mode((1920,1080))
+#clock = pygame.time.Clock()
+#clock.tick(150)
+display.fill(white)
+pygame.event.pump()
+# //////////////// node class //////////////
+class node():
+    def __init__(self, type):
+        self.type = type
+# //////////////// Initial Grid Setup //////////////
+def grid_setup():
+    for y in range(grid_rows):
+        for x in range(grid_collumbs):
+            if y == 0:
+                nodes[x,y] = node("wall")
+            if y % 2 == 0:
+                nodes[x,y] = node("wall")
+            elif y % 2 != 0:
+                if x % 2 == 0:
+                    nodes[x,y] = node("wall")
+                elif x == 0:
+                    nodes[x,y] = node("wall")
+                elif x % 2 != 0:
+                    nodes[x,y] = node("unvisited")
+
+
+
+# //////////////// Grid Drawing //////////////
+def node_draw(x,y,type):
+    if type == "wall":
+        pygame.draw.rect(display,black,[x,y,pixle_width,pixle_height])
+    elif type == "unvisited" or type == "visited":
+        pygame.draw.rect(display, white, [x, y, pixle_width, pixle_height])
+
+
+def grid_draw():
+    global wall
+    global unvisit
+    for y in range(grid_rows):
+        for x in range(grid_collumbs):
+            if nodes[x,y].type == "wall":
+                wall = wall + 1
+
+            if nodes[x,y].type == "unvisited":
+                unvisit = wall + 1
+
+    for y in range(grid_rows):
+        for x in range(grid_collumbs):
+            node_draw(pixle_width * x + 20, pixle_height  * y + 20, nodes[x,y].type)
+    pygame.display.update()
+# //////////////// Movements //////////////
+def moveright():
+    global currentposy
+    global currentposx
+    global prevposx
+    global prevposy
+    prevposx = currentposx
+    currentposx += 2
+    nodes[prevposx,currentposy].type = "visited"
+    nodes[currentposx,currentposy].type = "visited"
+    nodes[currentposx -1, currentposy].type = "visited"
+    stackx.append(currentposx)
+    stacky.append(currentposy)
+    display.fill(white)
+    grid_draw()
+    pygame.display.flip()
+def movedown():
+    global currentposy
+    global currentposx
+    global prevposx
+    global prevposy
+    prevposx = currentposx
+    currentposy += 2
+    nodes[prevposx,currentposy].type = "visited"
+    nodes[currentposx,currentposy].type = "visited"
+    nodes[currentposx, currentposy-1].type = "visited"
+    stackx.append(currentposx)
+    stacky.append(currentposy)
+    display.fill(white)
+    grid_draw()
+    pygame.display.flip()
+def moveup():
+    global currentposy
+    global currentposx
+    global prevposx
+    global prevposy
+    prevposx = currentposx
+    currentposy -= 2
+    nodes[prevposx,currentposy].type = "visited"
+    nodes[currentposx,currentposy].type = "visited"
+    nodes[currentposx, currentposy+1].type = "visited"
+    stackx.append(currentposx)
+    stacky.append(currentposy)
+    display.fill(white)
+    grid_draw()
+    pygame.display.flip()
+def moveleft():
+    global currentposy
+    global currentposx
+    global prevposx
+    global prevposy
+    prevposx = currentposx
+    currentposx -= 2
+    nodes[prevposx,currentposy].type = "visited"
+    nodes[currentposx,currentposy].type = "visited"
+    nodes[currentposx +1, currentposy].type = "visited"
+    stackx.append(currentposx)
+    stacky.append(currentposy)
+    display.fill(white)
+    grid_draw()
+    pygame.display.flip()
+# //////////////// check if spaces are available //////////////
+def checkspaces():
+    global top
+    global bot
+    global left
+    global right
+    if currentposx == 1:
+        left = False
+    elif nodes[currentposx - 2,currentposy].type == "visited":
+        left = False
+    if currentposy == 1:
+        top = False
+    elif nodes[currentposx, currentposy - 2].type == "visited":
+        top = False
+    if currentposx == grid_collumbs - 2:
+        right = False
+    elif nodes[currentposx + 2,currentposy].type == "visited":
+        right = False
+    if currentposy == grid_rows - 2:
+        bot = False
+    elif nodes[currentposx,currentposy + 2].type == "visited":
+        bot = False
+
+# //////////////// stack functions //////////////
+def stack_pop():
+    global currentposy
+    global currentposx
+    xlen = len(stackx)
+    ylen = len(stacky)
+    currentposx = stackx[xlen - 1]
+    currentposy = stacky[ylen - 1]
+    del stackx[xlen - 1]
+    del stacky[ylen - 1]
+
+
+# //////////////// Start of generation //////////////
+grid_setup()
+grid_draw()
+display.fill(white)
+global unvisited
+unvisited = 1
+def checkforunvisited():
+    global unvisited
+    unvisited = 0
+    for y in range(grid_rows):
+        for x in range(grid_collumbs):
+            if nodes[x,y].type == "unvisited":
+                unvisited += 1
+checkforunvisited()
+while unvisited > 0:
+    top = True
+    bot = True
+    left = True
+    right = True
+    checkspaces()
+    while top == True or bot == True or left == True or right == True:
+        #random direction picking
+        checkforunvisited()
+        top = True
+        bot = True
+        left = True
+        right = True
+        checkspaces()
+        direction = random.randint(1,4)
+        if direction == 1 and top == True:
+            moveup()
+            pygame.event.wait()
+            pygame.event.post(event1)
+            pygame.time.delay(1)
+            checkforunvisited()
+        elif direction == 2 and right == True:
+            moveright()
+            pygame.event.wait()
+            pygame.event.post(event1)
+            pygame.time.delay(1)
+            checkforunvisited()
+        elif direction == 3 and bot == True:
+            movedown()
+            pygame.event.wait()
+            pygame.event.post(event1)
+            pygame.time.delay(1)
+            checkforunvisited()
+        elif direction == 4 and left == True:
+            moveleft()
+            pygame.event.wait()
+            pygame.event.post(event1)
+            pygame.time.delay(1)
+            checkforunvisited()
+
+    else:
+        stack_pop()
+        checkforunvisited()
+else:
+    nodes[1,0].type = "visited"
+    nodes[grid_collumbs-2, grid_rows-1].type = "visited"
+    display.fill(white)
+    grid_draw()
+    pygame.display.flip()
+    pygame.time.delay(100000000)
+
+while True:
+    pygame.display.update()
+
+for event in pygame.event.get():
+        #pygame.event.wait()
+        if event.type == pygame.QUIT:
+            raise SystemExit
