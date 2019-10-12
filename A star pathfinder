@@ -1,0 +1,316 @@
+import pygame
+import math
+running = True
+windowsize_x = 1000
+windowsize_y = 1000
+gridsize_x = 20
+gridsize_y = 20
+black = (0,0,0)
+white = (255,255,255)
+grey = (160,160,160)
+green = (0,190,0)
+red = (255,0,0)
+button_width = windowsize_x / gridsize_x
+button_height = windowsize_y / gridsize_y
+outline_width = 1
+pygame.init()
+display = pygame.display.set_mode((windowsize_x,windowsize_y))
+clock = pygame.time.Clock()
+display.fill((255,255,255))
+start = 0
+font = pygame.font.Font('freesansbold.ttf', int(round(button_width / 4)))
+start_x = 0
+start_y = 0
+end_x = 0
+end_y = 0
+global current_x
+global current_y
+global prev_x
+global prev_y
+prev_x = 0
+prev_y = 0
+current_x = 0
+current_y = 0
+grid = {}
+open_list = []
+closed_list = []
+global stage
+stage = 0
+class cell():
+    def __init__(self,color,type,button_width,button_height,x,y,parent_x,parent_y,start_x,start_y,end_x,end_y,current_x,current_y, xact, yact):
+        self.color = color
+        self.type = type
+        self.width = button_width
+        self.height = button_height
+        self.x = x
+        self.y = y
+        self.xact = xact
+        self.yact = yact
+        self.outline_width = outline_width
+        self.parent_x = parent_x
+        self.parent_y = parent_y
+        #movement cost
+        self.g_cost = 0
+        #distence to destination
+        self.h_cost = 0
+        #total cost
+        self.f_cost = 0
+        self.in_open_list = False
+    def draw(self):
+        pygame.draw.rect(display,black,(self.x - outline_width ,self.y - outline_width, self.width + outline_width * 2, self.height + outline_width * 2))
+        pygame.draw.rect(display,self.color,(self.x,self.y,self.width,self.height))
+        if self.in_open_list == True and self.type != "path" and self.type != "end":
+            g_cost_text = font.render(str(round(self.g_cost, 0)), True, black)
+            h_cost_text = font.render(str(round(self.h_cost, 0)), True, black)
+            f_cost_text = font.render(str(round(self.f_cost, 0)), True, red)
+            g_cost_rect = g_cost_text.get_rect()
+            h_cost_rect = h_cost_text.get_rect()
+            f_cost_rect = f_cost_text.get_rect()
+            g_cost_rect.center = (self.x + (button_width - int(round(button_width / 4))), self.y + int(round(button_width / 4)) )
+            h_cost_rect.center = (self.x + (button_width - int(round(button_width / 4))),self.y + (button_height - int(round(button_width / 4))) )
+            f_cost_rect.center = (self.x + (int(round(button_width / 4))), self.y + (button_height - int(round(button_width / 4))))
+            display.blit(g_cost_text,g_cost_rect)
+            display.blit(h_cost_text, h_cost_rect)
+            display.blit(f_cost_text,f_cost_rect)
+    def onTop(self):
+        mouse = pygame.mouse.get_pos()
+        mouse2 = list(mouse)
+        if mouse2[0] > self.x and mouse2[1] > self.y and mouse2[0] < self.x + self.width and mouse2[1] < self.y + self.height:
+            return True
+        else:
+            return False
+    def findValues(self):
+        #print("finding value")
+        #print("self.xaxt " + str(self.xact))
+        #print("start_x " + str(start_x))
+        self.g_cost = math.sqrt((abs(self.xact - start_x) ** 2) + (abs(self.yact - start_y) ** 2))
+        self.h_cost = math.sqrt((abs(self.xact - end_x) ** 2) + (abs(self.yact - end_y) ** 2))
+        #print("g_cost " + str(self.g_cost))
+        #print("h_cost " + str(self.h_cost))
+        self.f_cost = self.g_cost + self.h_cost
+
+def update_screen():
+    display.fill((255,255,255))
+    draw_grid()
+    pygame.display.flip()
+
+def setup_grid():
+    for y in range(gridsize_y):
+        for x in range(gridsize_x):
+            grid[x,y] = cell(grey, "empty", button_width, button_height, x * button_width, y * button_height, 0, 0,start_x,start_y,end_x,end_y,current_x,current_y, x, y)
+
+def draw_grid():
+    for y in range(gridsize_y):
+        for x in range(gridsize_x):
+            #print(grid[x,y].type)
+            if grid[x,y].type == "empty_highlighted":
+                grid[x,y].color = white
+            elif grid[x,y].type == "empty":
+                grid[x,y].color = grey
+            elif grid[x,y].type == "wall":
+                grid[x,y].color = black
+            elif grid[x,y].type == "start":
+                grid[x,y].color = green
+            elif grid[x,y].type == "end" or grid[x,y].type == "path":
+                grid[x,y].color = red
+            grid[x,y].draw()
+
+def checkMousePos():
+    for z in range(gridsize_y):
+        for w in range(gridsize_x):
+            if grid[w,z].onTop() == True and grid[w,z].type == "empty":
+                grid[w,z].type = "empty_highlighted"
+            elif grid[w,z].onTop() == False and (grid[w,z].type == "empty" or grid[w,z].type == "empty_highlighted"):
+                grid[w,z].type = "empty"
+def checkMousePos_Specific(x,y):
+    if grid[x, y].onTop() == True:
+        return True
+    if grid[x, y].onTop() == False:
+        return False
+
+def findPath(start_x,start_y,open_list,closed_list,grid):
+    #print("finding path")
+    global stage
+    global current_x
+    global current_y
+    global prev_x
+    global prev_y
+    if stage == 0:
+        #print("stage1 exec")
+        if current_x > 0:
+            #print("stage 1-1")
+            if grid[current_x -1,current_y].type != "wall" and grid[current_x -1,current_y].in_open_list == False and grid[current_x -1,current_y].type != "start":
+                grid[current_x -1,current_y].in_open_list = True
+                open_list.append(grid[current_x -1,current_y])
+                grid[current_x -1,current_y].parent_x = current_x
+                grid[current_x - 1, current_y].parent_y = current_y
+        if current_y > 0:
+            #print("stage 1-2")
+            if grid[current_x,current_y -1].type != "wall" and grid[current_x,current_y -1].in_open_list == False and grid[current_x,current_y -1].type != "start":
+                grid[current_x,current_y -1].in_open_list = True
+                open_list.append(grid[current_x,current_y - 1])
+                grid[current_x,current_y -1].parent_x = current_x
+                grid[current_x,current_y -1].parent_y = current_y
+        if current_x < gridsize_x:
+            #print("stage 1-3")
+            if grid[current_x + 1,current_y].type != "wall" and grid[current_x + 1,current_y].in_open_list == False and grid[current_x + 1,current_y].type != "start":
+                grid[current_x + 1,current_y].in_open_list = True
+                open_list.append(grid[current_x + 1,current_y])
+                grid[current_x + 1,current_y].parent_x = current_x
+                grid[current_x + 1,current_y].parent_y = current_y
+        if current_y < gridsize_y:
+            #print("stage 1-4")
+            if grid[current_x,current_y + 1].type != "wall" and grid[current_x,current_y + 1].in_open_list == False and grid[current_x,current_y + 1].type != "start":
+                grid[current_x,current_y + 1].in_open_list = True
+                open_list.append(grid[current_x,current_y + 1])
+                grid[current_x,current_y + 1].parent_x = current_x
+                grid[current_x,current_y + 1].parent_y = current_y
+        '''if current_x > 0 and current_y > 0:
+            #print("stage 1-5")
+            if grid[current_x - 1, current_y - 1].type != "wall" and grid[current_x - 1, current_y - 1].in_open_list == False and grid[current_x - 1, current_y - 1].type != "start":
+                grid[current_x - 1, current_y - 1].in_open_list = True
+                open_list.append(grid[current_x - 1, current_y - 1])
+                grid[current_x - 1, current_y - 1].parent_x = current_x
+                grid[current_x - 1, current_y - 1].parent_y = current_y
+        if current_x < gridsize_x and current_y < gridsize_y:
+            #print("stage 1-6")
+            if grid[current_x + 1, current_y + 1].type != "wall" and grid[current_x + 1, current_y + 1].in_open_list == False and grid[current_x + 1, current_y + 1].type != "start":
+                grid[current_x + 1, current_y + 1].in_open_list = True
+                open_list.append(grid[current_x + 1, current_y + 1])
+                grid[current_x + 1, current_y + 1].parent_x = current_x
+                grid[current_x + 1, current_y + 1].parent_y = current_y
+        if current_x < gridsize_x and current_y > 0:
+            #print("stage 1-7")
+            if grid[current_x + 1, current_y - 1].type != "wall" and grid[current_x + 1, current_y - 1].in_open_list == False and grid[current_x + 1, current_y - 1].type != "start":
+                grid[current_x + 1, current_y - 1].in_open_list = True
+                open_list.append(grid[current_x + 1, current_y - 1])
+                grid[current_x + 1, current_y - 1].parent_x = current_x
+                grid[current_x + 1, current_y - 1].parent_y = current_y
+        if current_x > 0 and current_y < gridsize_y:
+            #print("stage 1-8")
+            if grid[current_x - 1, current_y + 1].type != "wall" and grid[current_x - 1, current_y + 1].in_open_list == False and grid[current_x - 1, current_y + 1].type != "start":
+                grid[current_x - 1, current_y + 1].in_open_list = True
+                open_list.append(grid[current_x - 1, current_y + 1])
+                grid[current_x - 1, current_y + 1].parent_x = current_x
+                grid[current_x - 1, current_y + 1].parent_y = current_y
+        '''
+        stage = 1
+        #print("open list " + str(open_list))
+    if stage == 1:
+        for i in open_list:
+            i.findValues()
+        stage = 2
+    if stage == 2:
+        temp_list = []
+        index = 0
+        for i in open_list:
+            #print(index)
+            temp_list.append(open_list[index].f_cost)
+            index += 1
+        #print("temp list " + str(temp_list))
+        temp_item = temp_list.index(min(temp_list))
+        print("temp item" + str(temp_item))
+        print("current x " + str(current_x))
+        print("current y " + str(current_y))
+        stage = 3
+    if stage == 3:
+        prev_x = current_x
+        prev_y = current_y
+        current_x = open_list[temp_item].xact
+        current_y = open_list[temp_item].yact
+        closed_list.append(open_list[temp_item])
+        del open_list[temp_item]
+        stage = 0
+
+
+
+
+
+
+setup_grid()
+while running == True:
+    checkMousePos()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if start == 0:
+                for y in range(gridsize_y):
+                    for x in range(gridsize_x):
+                        check = checkMousePos_Specific(x,y)
+                        if check == True:
+                            if grid[x,y].type == "empty_highlighted":
+                                grid[x,y].type = "wall"
+                            elif grid[x,y].type == "wall":
+                                grid[x,y].type = "empty"
+            elif start == 1:
+                for y in range(gridsize_y):
+                    for x in range(gridsize_x):
+                        check = checkMousePos_Specific(x, y)
+                        if check == True:
+                            if grid[x,y].type == "empty_highlighted":
+                                grid[x,y].type = "start"
+                                start_x = x
+                                start_y = y
+                                start = 2
+                                current_x = start_x
+                                current_y = start_y
+            elif start == 2:
+                for y in range(gridsize_y):
+                    for x in range(gridsize_x):
+                        check = checkMousePos_Specific(x, y)
+                        if check == True:
+                            if grid[x,y].type == "empty_highlighted":
+                                grid[x,y].type = "end"
+                                end_x = x
+                                end_y = y
+                                start = 3
+            elif start == 3:
+                break
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE and start == 0:
+                start = 1
+        if start == 3:
+            #print("finding path")
+            #print("start " + str(start))
+            #print("stage " + str(stage))
+            #print("current x " + str(current_x))
+            #print("current y " + str(current_y))
+            #print("end x " + str(end_x))
+            #print("end y " + str(end_y))
+            current_x = start_x
+            current_y_y = start_y
+            while current_x != end_x or current_y != end_y:
+                findPath(start_x, start_y,open_list, closed_list, grid)
+                pygame.time.wait(60)
+                update_screen()
+            else:
+                start = 4
+        if start == 4:
+            closed_list[len(closed_list) - 2].type = "path"
+            #print("current x " + str(current_x))
+            #print("current y " + str(current_y))
+            #print("parent x " + str(closed_list[len(closed_list) - 2].parent_x))
+            #print("parent y " + str(closed_list[len(closed_list) - 2].parent_y))
+            current_x = closed_list[len(closed_list) - 2].parent_x
+            current_y = closed_list[len(closed_list) - 2].parent_y
+            while current_x != start_x or current_y != start_y:
+                pygame.event.get()
+                grid[current_x, current_y].type = "path"
+                #print("current x " + str(current_x))
+                #print("current y " + str(current_y))
+                #print("parent x " + str(grid[current_x, current_y].parent_x))
+                #print("parent y " + str(grid[current_x, current_y].parent_y))
+                temp1 = grid[current_x, current_y].parent_x
+                temp2 = grid[current_x, current_y].parent_y
+                current_x = temp1
+                current_y = temp2
+                update_screen()
+                pygame.time.wait(60)
+            start = 5
+        if start == 5:
+            grid[start_x,start_y].type = "path"
+            print("path found")
+    update_screen()
+    clock.tick(160)
