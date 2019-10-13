@@ -42,7 +42,7 @@ grid = {}
 open_list = []
 closed_list = []
 # ////////////////////////SETTINGS//////////////////
-imported = True
+imported = False
 display_text = False
 # //////////////////////////////////////////////////
 class cell():
