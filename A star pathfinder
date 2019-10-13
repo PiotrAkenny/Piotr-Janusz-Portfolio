@@ -4,8 +4,8 @@ from PIL import Image
 running = True
 windowsize_x = 1000
 windowsize_y = 1000
-gridsize_x = 20
-gridsize_y = 20
+gridsize_x = 5
+gridsize_y = 5
 black = (0,0,0)
 white = (255,255,255)
 grey = (160,160,160)
@@ -19,16 +19,21 @@ pygame.init()
 display = pygame.display.set_mode((windowsize_x,windowsize_y))
 clock = pygame.time.Clock()
 display.fill((255,255,255))
-start = 0
 font = pygame.font.Font('freesansbold.ttf', int(round(button_width / 4)))
 start_x = 0
 start_y = 0
 end_x = 0
 end_y = 0
+global temp_item
 global current_x
 global current_y
 global prev_x
 global prev_y
+global start
+global stage
+stage = 0
+start = 0
+temp_item = 0
 prev_x = 0
 prev_y = 0
 current_x = 0
@@ -37,11 +42,9 @@ grid = {}
 open_list = []
 closed_list = []
 # ////////////////////////SETTINGS//////////////////
-imported = False
+imported = True
 display_text = False
 # //////////////////////////////////////////////////
-global stage
-stage = 0
 class cell():
     def __init__(self,color,type,button_width,button_height,x,y,parent_x,parent_y,start_x,start_y,end_x,end_y,current_x,current_y, xact, yact):
         self.color = color
@@ -173,6 +176,7 @@ def findPath(start_x,start_y,open_list,closed_list,grid):
                 open_list.append(grid[current_x,current_y + 1])
                 grid[current_x,current_y + 1].parent_x = current_x
                 grid[current_x,current_y + 1].parent_y = current_y
+        pygame.event.get()
         '''if current_x > 0 and current_y > 0:
             #print("stage 1-5")
             if grid[current_x - 1, current_y - 1].type != "wall" and grid[current_x - 1, current_y - 1].in_open_list == False and grid[current_x - 1, current_y - 1].type != "start":
@@ -216,11 +220,20 @@ def findPath(start_x,start_y,open_list,closed_list,grid):
             temp_list.append(open_list[index].f_cost)
             index += 1
         #print("temp list " + str(temp_list))
-        temp_item = temp_list.index(min(temp_list))
-        print("temp item" + str(temp_item))
-        print("current x " + str(current_x))
-        print("current y " + str(current_y))
-        stage = 3
+        try:
+            global temp_item
+            temp_item = temp_list.index(min(temp_list))
+        except:
+            print("exception")
+            font2 = pygame.font.Font('freesansbold.ttf', 100)
+            font2_text = font2.render("No path",True,red)
+            font2_rect = font2_text.get_rect()
+            font2_rect.center = (500,500)
+            display.blit(font2_text, font2_rect)
+            pygame.display.flip()
+            pygame.time.wait(500000)
+        if stage != 4:
+            stage = 3
     if stage == 3:
         prev_x = current_x
         prev_y = current_y
@@ -229,6 +242,8 @@ def findPath(start_x,start_y,open_list,closed_list,grid):
         closed_list.append(open_list[temp_item])
         del open_list[temp_item]
         stage = 0
+    if stage == 4:
+        print("oops")
 
 
 
@@ -336,5 +351,7 @@ while running == True:
         if start == 5:
             grid[start_x,start_y].type = "path"
             print("path found")
+        if start == 6:
+            print("oops2")
     update_screen()
     clock.tick(160)
